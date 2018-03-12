@@ -1,0 +1,43 @@
+html {
+    background-color: #333333;
+    color: #e6e6e6;
+    font-family: sans-serif;
+}
+
+body {
+    text-align: center;
+}
+
+#title, #subtitle {
+    text-align: center;
+}
+
+#info {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#links {
+    font-size: 2em;
+}
+
+.infocell {
+    padding: 1em;
+    font-size: 1.25em;
+}
+
+a:link {
+    color: white;
+}
+
+a:visited {
+    color: white;
+}
+
+a:hover {
+    color: white;
+}
+
+a:active {
+    color: white;
+}
