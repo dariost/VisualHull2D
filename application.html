@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>VisualHull2D - Application</title>
+        <link rel="stylesheet" type="text/css" href="style.css">
+    </head>
+    <body>
+        <table>
+            <tr>
+                <td>
+                    <canvas id="cv" width="750" height="500"></canvas>
+                </td>
+                <td>
+                    <textarea id="log" readonly></textarea>
+                </td>
+            </tr>
+        </table>
+        <div id="controls">
+            <button type="button" onclick="generate();" id="generate">Generate</button> |
+            Speed:<input class="slider" type="range"/> |
+            <button type="button">Naïve</button>
+
+        </div>
+    <script src="application.js"></script>
+    </body>
+</html>

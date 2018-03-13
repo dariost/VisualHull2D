@@ -12,7 +12,23 @@ body {
     text-align: center;
 }
 
-#info {
+.slider {
+    vertical-align: middle;
+}
+
+#log {
+    width: 250px;
+    border-color: grey;
+    border-width: thin;
+    border-style: solid;
+    height: 500px;
+    font-family: monospace;
+    background-color: #222222;
+    color: white;
+    resize: none;
+}
+
+table {
     margin-left: auto;
     margin-right: auto;
 }
