@@ -19,7 +19,8 @@
         <div id="controls">
             <button type="button" onclick="generate();" id="generate">Generate</button> |
             Speed:<input class="slider" type="range" value="1" min="-2" max="8" step="0.1" id="speed" /> |
-            <button type="button" onclick="start(naive);" id="naive">Naïve</button> |
+            <button type="button" onclick="start(naive);" id="naive">Naïve</button>
+            <button type="button" onclick="start(quickhull);" id="naive">QuickHull</button> |
             <button type="button" onclick="stop = true;" id="naive">Stop</button>
         </div>
     <script src="application.js"></script>

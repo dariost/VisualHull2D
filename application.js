@@ -1,5 +1,7 @@
 'use strict';
 
+const MAX_POINTS = 192;
+
 class VisualHull2D {
     constructor(canvas) {
         this.canvas = canvas;
@@ -19,9 +21,12 @@ class VisualHull2D {
 
     generateVertices(n) {
         this.vertices = new Array();
-        const border = 50;
-        const size = 15;
-        const minDistance = 15;
+        const border = 25;
+        let size = 15;
+        if(n > 64) {
+            size = 10;
+        }
+        const minDistance = 10;
         log.write("[INFO] Generating " + n + " points");
         for(let i = 0; i < n; i++) {
             const x = parseInt(Math.random() * (this.width - 2 * border) + border);
@@ -143,8 +148,8 @@ let controls = [
 
 function generate() {
     const n = parseInt(prompt("Number of points", "8")) || 8;
-    if(n < 3 || n > 64) {
-        alert("Number of points must be in [3; 64]");
+    if(n < 3 || n > MAX_POINTS) {
+        alert("Number of points must be in [3; " + MAX_POINTS + "]");
         return;
     }
     vh.generateVertices(n);
@@ -188,6 +193,154 @@ function execute() {
             setTimeout(execute, next_wait);
         }
     }
+}
+
+function generate_id(a, b) {
+    if(a < b)
+        return a * MAX_POINTS + b;
+    else
+        return b * MAX_POINTS + a;
+}
+
+function* quickhull() {
+    let n = vh.vertices.length;
+    if(n < 3) {
+        return;
+    }
+    for(let i = 0; i < n; i++) {
+        vh.vertices[i].number = i;
+    }
+    yield "[QUICKHULL] Labeled points randomly";
+    let furthest = [0, 0, 0, 0];
+    for(let i = 1; i < n; i++) {
+        if(vh.vertices[i].x < vh.vertices[furthest[0]].x)
+            furthest[0] = i;
+        if(vh.vertices[i].x > vh.vertices[furthest[1]].x)
+            furthest[1] = i;
+        if(vh.vertices[i].y < vh.vertices[furthest[2]].y)
+            furthest[2] = i;
+        if(vh.vertices[i].y > vh.vertices[furthest[3]].y)
+            furthest[3] = i;
+    }
+    furthest.sort();
+    vh.vertices[furthest[0]].color = "green";
+    vh.vertices[furthest[3]].color = "green";
+    let initial_id = generate_id(furthest[0], furthest[3]);
+    vh.lines.set(initial_id, new Line2D(vh.context, vh.vertices[furthest[0]].x, vh.vertices[furthest[0]].y,
+                                        vh.vertices[furthest[3]].x, vh.vertices[furthest[3]].y, "magenta", 10));
+    yield "[QUICKHULL] Found initial points";
+    let initial_division = [new Array(), new Array()];
+    for(let i = 0; i < n; i++) {
+        if(i == furthest[0] || i == furthest[3]) {
+            continue;
+        }
+        let cross = cross_product(vector(vh.vertices[furthest[0]], vh.vertices[furthest[3]]),
+                                  vector(vh.vertices[furthest[0]], vh.vertices[i]));
+        if(cross > 0.0) {
+            vh.vertices[i].color = "red";
+            initial_division[0].push(i);
+        } else {
+            vh.vertices[i].color = "blue";
+            initial_division[1].push(i);
+        }
+        yield "[QUICKHULL] Initial division for " + i;
+    }
+    for(let i = 0; i < n; i++) {
+        if(i == furthest[0] || i == furthest[3]) {
+            continue;
+        }
+        vh.vertices[i].color = "black";
+    }
+    if(initial_division[0].length == 0 || initial_division[1].length == 0) {
+        vh.lines.delete(initial_id);
+        vh.lines.set(initial_id, new Line2D(vh.context, vh.vertices[furthest[0]].x, vh.vertices[furthest[0]].y,
+                                            vh.vertices[furthest[3]].x, vh.vertices[furthest[3]].y, "green", 10));
+    }
+    let queue = new Array();
+    for(let i = 0; i < 2; i++) {
+        if(initial_division[i].length == 0) {
+            continue;
+        }
+        queue.push({
+            pivot: [furthest[0], furthest[3]],
+            points: initial_division[i]
+        });
+    }
+    while(queue.length > 0) {
+        let first = queue.shift();
+        let far = first.points[0];
+        for(let i of first.points) {
+            let dist_far = distance(vector(vh.vertices[first.pivot[0]], vh.vertices[far]),
+                                    vector(vh.vertices[first.pivot[0]], vh.vertices[first.pivot[1]]));
+            let dist_i = distance(vector(vh.vertices[first.pivot[0]], vh.vertices[i]),
+                                  vector(vh.vertices[first.pivot[0]], vh.vertices[first.pivot[1]]));
+            if(dist_i >= dist_far) {
+                vh.vertices[far].color = "cyan";
+                far = i;
+                vh.vertices[far].color = "yellow";
+            } else {
+                vh.vertices[i].color = "cyan";
+            }
+            yield "[QUICKHULL] Calculated distance for " + i;
+        }
+        vh.vertices[far].color = "green";
+        vh.lines.set(generate_id(first.pivot[1], far),
+                     new Line2D(vh.context, vh.vertices[far].x, vh.vertices[far].y,
+                                vh.vertices[first.pivot[1]].x, vh.vertices[first.pivot[1]].y, "magenta", 10));
+        vh.lines.set(generate_id(first.pivot[0], far),
+                     new Line2D(vh.context, vh.vertices[first.pivot[0]].x, vh.vertices[first.pivot[0]].y,
+                                vh.vertices[far].x, vh.vertices[far].y, "magenta", 10));
+        let new_division = [new Array(), new Array()];
+        for(let i of first.points) {
+            if(i == far) {
+                continue;
+            }
+            let v1 = vector(vh.vertices[first.pivot[0]], vh.vertices[first.pivot[1]]);
+            let f1 = vector(vh.vertices[first.pivot[0]], vh.vertices[far]);
+            let p1 = vector(vh.vertices[first.pivot[0]], vh.vertices[i]);
+            let dv1 = cross_product(v1, p1);
+            let df1 = cross_product(f1, p1);
+            let v2 = vector(vh.vertices[first.pivot[1]], vh.vertices[first.pivot[0]]);
+            let f2 = vector(vh.vertices[first.pivot[1]], vh.vertices[far]);
+            let p2 = vector(vh.vertices[first.pivot[1]], vh.vertices[i]);
+            let dv2 = cross_product(v2, p2);
+            let df2 = cross_product(f2, p2);
+            if(same_sign(dv1, df1) && same_sign(dv2, df2)) {
+                log.write("!!!ALERT!!!");
+            }
+            if(same_sign(dv1, df1)) {
+                vh.vertices[i].color = "red";
+                new_division[0].push(i);
+            } else if(same_sign(dv2, df2)) {
+                vh.vertices[i].color = "blue";
+                new_division[1].push(i);
+            } else {
+                vh.vertices[i].color = "black";
+            }
+            yield "[QUICKHULL] Classified " + i;
+        }
+        for(let i of first.points) {
+            if(i == far) {
+                continue;
+            }
+            vh.vertices[i].color = "black";
+        }
+        if(vh.lines.has(generate_id(first.pivot[0], first.pivot[1])) && vh.lines.get(generate_id(first.pivot[0], first.pivot[1])).color != "green")
+            vh.lines.delete(generate_id(first.pivot[0], first.pivot[1]));
+        for(let i = 0; i < 2; i++) {
+            if(new_division[i].length == 0) {
+                vh.lines.set(generate_id(first.pivot[i], far),
+                             new Line2D(vh.context, vh.vertices[first.pivot[i]].x, vh.vertices[first.pivot[i]].y,
+                                        vh.vertices[far].x, vh.vertices[far].y, "green", 10));
+            } else {
+                queue.push({
+                    pivot: [first.pivot[i], far],
+                    points: new_division[i]
+                });
+            }
+        }
+    }
+    yield "[QUICKHULL] Completed";
 }
 
 function* naive() {
@@ -251,6 +404,33 @@ function vector(a, b) {
     };
 }
 
+function same_sign(a, b) {
+    return (a >= 0.0 && b >= 0.0) || (a <= 0.0 && b <= 0.0);
+}
+
+function norm(a) {
+    return Math.hypot(a.x, a.y);
+}
+
+function normalize(a) {
+    return {
+        x: a.x / norm(a),
+        y: a.y / norm(a)
+    };
+}
+
+function dot_product(a, b) {
+    return a.x * b.x + a.y * b.y;
+}
+
 function cross_product(a, b) {
     return a.x * b.y - a.y * b.x;
+}
+
+function distance(p, v) {
+    let nv = normalize(v);
+    let scale = dot_product(p, nv);
+    nv.x *= scale;
+    nv.y *= scale;
+    return norm(vector(nv, p));
 }
