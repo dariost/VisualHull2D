@@ -143,7 +143,8 @@ let log = new Logger(document.getElementById("log"));
 let vh = new VisualHull2D(document.getElementById("cv"));
 let controls = [
     document.getElementById("generate"),
-    document.getElementById("naive")
+    document.getElementById("naive"),
+    document.getElementById("quickhull")
 ];
 
 function generate() {
