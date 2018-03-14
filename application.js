@@ -1,6 +1,7 @@
 'use strict';
 
-const MAX_POINTS = 192;
+const MAX_POINTS = 256;
+let LINE_SIZE = 10;
 
 class VisualHull2D {
     constructor(canvas) {
@@ -22,9 +23,17 @@ class VisualHull2D {
     generateVertices(n) {
         this.vertices = new Array();
         const border = 25;
-        let size = 15;
-        if(n > 64) {
+        let size;
+        if(n > 128) {
+            size = 7;
+            LINE_SIZE = 5;
+        }
+        else if(n > 64) {
             size = 10;
+            LINE_SIZE = 7;
+        } else {
+            size = 15;
+            LINE_SIZE = 10;
         }
         const minDistance = 10;
         log.write("[INFO] Generating " + n + " points");
@@ -228,7 +237,7 @@ function* quickhull() {
     vh.vertices[furthest[3]].color = "green";
     let initial_id = generate_id(furthest[0], furthest[3]);
     vh.lines.set(initial_id, new Line2D(vh.context, vh.vertices[furthest[0]].x, vh.vertices[furthest[0]].y,
-                                        vh.vertices[furthest[3]].x, vh.vertices[furthest[3]].y, "magenta", 10));
+                                        vh.vertices[furthest[3]].x, vh.vertices[furthest[3]].y, "magenta", LINE_SIZE));
     yield "[QUICKHULL] Found initial points";
     let initial_division = [new Array(), new Array()];
     for(let i = 0; i < n; i++) {
@@ -255,7 +264,7 @@ function* quickhull() {
     if(initial_division[0].length == 0 || initial_division[1].length == 0) {
         vh.lines.delete(initial_id);
         vh.lines.set(initial_id, new Line2D(vh.context, vh.vertices[furthest[0]].x, vh.vertices[furthest[0]].y,
-                                            vh.vertices[furthest[3]].x, vh.vertices[furthest[3]].y, "green", 10));
+                                            vh.vertices[furthest[3]].x, vh.vertices[furthest[3]].y, "green", LINE_SIZE));
     }
     let queue = new Array();
     for(let i = 0; i < 2; i++) {
@@ -287,10 +296,10 @@ function* quickhull() {
         vh.vertices[far].color = "green";
         vh.lines.set(generate_id(first.pivot[1], far),
                      new Line2D(vh.context, vh.vertices[far].x, vh.vertices[far].y,
-                                vh.vertices[first.pivot[1]].x, vh.vertices[first.pivot[1]].y, "magenta", 10));
+                                vh.vertices[first.pivot[1]].x, vh.vertices[first.pivot[1]].y, "magenta", LINE_SIZE));
         vh.lines.set(generate_id(first.pivot[0], far),
                      new Line2D(vh.context, vh.vertices[first.pivot[0]].x, vh.vertices[first.pivot[0]].y,
-                                vh.vertices[far].x, vh.vertices[far].y, "magenta", 10));
+                                vh.vertices[far].x, vh.vertices[far].y, "magenta", LINE_SIZE));
         let new_division = [new Array(), new Array()];
         for(let i of first.points) {
             if(i == far) {
@@ -332,7 +341,7 @@ function* quickhull() {
             if(new_division[i].length == 0) {
                 vh.lines.set(generate_id(first.pivot[i], far),
                              new Line2D(vh.context, vh.vertices[first.pivot[i]].x, vh.vertices[first.pivot[i]].y,
-                                        vh.vertices[far].x, vh.vertices[far].y, "green", 10));
+                                        vh.vertices[far].x, vh.vertices[far].y, "green", LINE_SIZE));
             } else {
                 queue.push({
                     pivot: [first.pivot[i], far],
@@ -356,7 +365,7 @@ function* naive() {
     for(let i = 0; i < n; i++) {
         for(let j = i + 1; j < n; j++) {
             let line = new Line2D(vh.context, vh.vertices[i].x, vh.vertices[i].y,
-                                  vh.vertices[j].x, vh.vertices[j].y, "magenta", 10);
+                                  vh.vertices[j].x, vh.vertices[j].y, "magenta", LINE_SIZE);
             let line_id = [i, j];
             vh.lines.set(line_id, line);
             let prev_colors = new Array();
@@ -389,7 +398,7 @@ function* naive() {
                 vh.vertices[i].color = "green";
                 vh.vertices[j].color = "green";
                 line = new Line2D(vh.context, vh.vertices[i].x, vh.vertices[i].y,
-                                  vh.vertices[j].x, vh.vertices[j].y, "green", 10);
+                                  vh.vertices[j].x, vh.vertices[j].y, "green", LINE_SIZE);
                 vh.lines.set(line_id, line);
                 yield "[NAIVE] Found edge!";
             }
