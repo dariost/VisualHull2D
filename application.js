@@ -47,6 +47,15 @@ class VisualHull2D {
                     break;
                 }
             }
+            for(let i = 0; i < this.vertices.length && !poisoned; i++) {
+                for(let j = i + 1; j < this.vertices.length; j++) {
+                    let v = Math.abs(cross_product(vector(this.vertices[i], this.vertices[j]), vector(this.vertices[i], {x: x, y: y})));
+                    if(v < 1.0) {
+                        poisoned = true;
+                        break;
+                    }
+                }
+            }
             if(poisoned) {
                 i--;
                 continue;
@@ -153,7 +162,10 @@ let vh = new VisualHull2D(document.getElementById("cv"));
 let controls = [
     document.getElementById("generate"),
     document.getElementById("naive"),
-    document.getElementById("quickhull")
+    document.getElementById("quickhull"),
+    document.getElementById("smart_naive"),
+    document.getElementById("gift"),
+    document.getElementById("chain")
 ];
 
 function generate() {
@@ -210,6 +222,75 @@ function generate_id(a, b) {
         return a * MAX_POINTS + b;
     else
         return b * MAX_POINTS + a;
+}
+
+function generate_unique_id(a, b) {
+    return a * MAX_POINTS + b;
+}
+
+function* gift() {
+    let n = vh.vertices.length;
+    if(n < 3) {
+        return;
+    }
+    for(let i = 0; i < n; i++) {
+        vh.vertices[i].number = i;
+    }
+    yield "[GIFT] Labeled points randomly";
+    let furthest = [0, 0, 0, 0];
+    for(let i = 1; i < n; i++) {
+        if(vh.vertices[i].x < vh.vertices[furthest[0]].x)
+            furthest[0] = i;
+        if(vh.vertices[i].x > vh.vertices[furthest[1]].x)
+            furthest[1] = i;
+        if(vh.vertices[i].y < vh.vertices[furthest[2]].y)
+            furthest[2] = i;
+        if(vh.vertices[i].y > vh.vertices[furthest[3]].y)
+            furthest[3] = i;
+    }
+    furthest.sort();
+    let starting_point = furthest[0];
+    let last_point = starting_point;
+    vh.vertices[starting_point].color = "green";
+    yield "[GIFT] Found starting point " + starting_point;
+    furthest = null;
+    while(furthest != starting_point) {
+        let best_point = null;
+        let colors = new Array();
+        for(let i = 0; i < n; i++) {
+            colors[i] = vh.vertices[i].color;
+            if(i == last_point) {
+                continue;
+            }
+            vh.vertices[i].color = "cyan";
+            if(best_point == null) {
+                vh.vertices[i].color = "yellow";
+                best_point = i;
+            } else {
+                let v = cross_product(vector(vh.vertices[last_point], vh.vertices[best_point]), vector(vh.vertices[last_point], vh.vertices[i]));
+                if(v < 0.0) {
+                    vh.vertices[best_point].color = "cyan";
+                    vh.vertices[i].color = "yellow";
+                    best_point = i;
+                }
+            }
+            yield "[GIFT] Testing point " + i;
+        }
+        vh.lines.set(generate_unique_id(last_point, best_point),
+                     new Line2D(vh.context, vh.vertices[last_point].x, vh.vertices[last_point].y,
+                                vh.vertices[best_point].x, vh.vertices[best_point].y, "green", LINE_SIZE));
+        furthest = best_point;
+        last_point = best_point;
+        vh.vertices[best_point].color = "green";
+        for(let i = 0; i < n; i++) {
+            if(i == best_point) {
+                continue;
+            }
+            vh.vertices[i].color = colors[i];
+        }
+        yield "[GIFT] Found convex hull point " + best_point;
+    }
+    yield "[GIFT] Completed";
 }
 
 function* quickhull() {
@@ -353,6 +434,64 @@ function* quickhull() {
     yield "[QUICKHULL] Completed";
 }
 
+function* smart_naive() {
+    let n = vh.vertices.length;
+    if(n < 3) {
+        return;
+    }
+    for(let i = 0; i < n; i++) {
+        vh.vertices[i].number = i;
+    }
+    yield "[SMARTNAIVE] Labeled points randomly";
+    for(let i = 0; i < n; i++) {
+        for(let j = i + 1; j < n; j++) {
+            let line = new Line2D(vh.context, vh.vertices[i].x, vh.vertices[i].y,
+                                  vh.vertices[j].x, vh.vertices[j].y, "magenta", LINE_SIZE);
+            let line_id = [i, j];
+            vh.lines.set(line_id, line);
+            let prev_colors = new Array();
+            for(let k = 0; k < n; k++) {
+                prev_colors.push(vh.vertices[k].color);
+            }
+            vh.vertices[i].color = "magenta";
+            vh.vertices[j].color = "magenta";
+            yield "[SMARTNAIVE] Testing " + [i, j];
+            let rank = [0, 0];
+            for(let k = 0; k < n; k++) {
+                if(k == i || k == j) {
+                    continue;
+                }
+                let cross = cross_product(vector(vh.vertices[i], vh.vertices[j]), vector(vh.vertices[i], vh.vertices[k]));
+                if(cross > 0.0) {
+                    vh.vertices[k].color = "red";
+                    rank[0]++;
+                } else {
+                    vh.vertices[k].color = "blue";
+                    rank[1]++;
+                }
+                yield "[SMARTNAIVE] Classified point " + k;
+                if(rank[0] > 0 && rank[1] > 1) {
+                    yield "[SMARTNAIVE] Early break";
+                    break;
+                }
+            }
+            vh.lines.delete(line_id);
+            for(let k = 0; k < n; k++) {
+                vh.vertices[k].color = prev_colors[k];
+            }
+            if(rank[0] == 0 || rank[1] == 0) {
+                vh.vertices[i].color = "green";
+                vh.vertices[j].color = "green";
+                line = new Line2D(vh.context, vh.vertices[i].x, vh.vertices[i].y,
+                                  vh.vertices[j].x, vh.vertices[j].y, "green", LINE_SIZE);
+                vh.lines.set(line_id, line);
+                yield "[SMARTNAIVE] Found edge!";
+            }
+        }
+    }
+    yield "[SMARTNAIVE] Complete";
+}
+
 function* naive() {
     let n = vh.vertices.length;
     if(n < 3) {
@@ -405,6 +544,98 @@ function* naive() {
         }
     }
     yield "[NAIVE] Complete";
+}
+
+function* chain() {
+    let n = vh.vertices.length;
+    if(n < 3) {
+        return;
+    }
+    yield "[CHAIN] Labeling points in order";
+    let points = new Array();
+    for(let i = 0; i < n; i++) {
+        points.push(i);
+    }
+    points.sort(function(a, b) {
+        if(vh.vertices[a].x < vh.vertices[b].x)
+            return -1;
+        else if(vh.vertices[a].x > vh.vertices[b].x)
+            return 1;
+        else if(vh.vertices[a].y < vh.vertices[b].y)
+            return -1;
+        else if(vh.vertices[a].y > vh.vertices[b].y)
+            return 1;
+        else
+            return 0;
+    });
+    for(let i = 0; i < n; i++) {
+        vh.vertices[points[i]].number = i;
+        current_moves -= 1;
+        yield "[CHAIN] Labeled point " + i;
+    }
+    let lower = new Array();
+    for(let i = 0; i < n; i++) {
+        vh.vertices[points[i]].color = "magenta";
+        if(lower.length > 0) {
+            vh.lines.set(generate_unique_id(lower[lower.length - 1], points[i]),
+                         new Line2D(vh.context, vh.vertices[lower[lower.length - 1]].x, vh.vertices[lower[lower.length - 1]].y,
+                                    vh.vertices[points[i]].x, vh.vertices[points[i]].y, "magenta", LINE_SIZE));
+        }
+        current_moves -= 1;
+        yield "[CHAIN] Trying with point " + i;
+        while(lower.length > 1 && cross_product(vector(vh.vertices[lower[lower.length - 2]], vh.vertices[lower[lower.length - 1]]),
+                                                vector(vh.vertices[lower[lower.length - 1]], vh.vertices[points[i]])) > 0.0) {
+            vh.lines.delete(generate_unique_id(lower[lower.length - 2], lower[lower.length - 1]));
+            vh.lines.delete(generate_unique_id(lower[lower.length - 1], points[i]));
+            vh.vertices[lower[lower.length - 1]].color = "black";
+            lower.pop();
+            vh.lines.set(generate_unique_id(lower[lower.length - 1], points[i]),
+                         new Line2D(vh.context, vh.vertices[lower[lower.length - 1]].x, vh.vertices[lower[lower.length - 1]].y,
+                                    vh.vertices[points[i]].x, vh.vertices[points[i]].y, "magenta", LINE_SIZE));
+            yield "[CHAIN] Removing wrong turn";
+        }
+        lower.push(points[i]);
+    }
+    for(let id of lower) {
+        vh.vertices[id].color = "green";
+    }
+    for(let line of vh.lines.values()) {
+        line.color = "green";
+    }
+    yield "[CHAIN] Lower part completed";
+    let upper = new Array();
+    for(let i = n - 1; i >= 0; i--) {
+        vh.vertices[points[i]].color = "magenta";
+        if(upper.length > 0) {
+            vh.lines.set(generate_unique_id(upper[upper.length - 1], points[i]),
+                         new Line2D(vh.context, vh.vertices[upper[upper.length - 1]].x, vh.vertices[upper[upper.length - 1]].y,
+                                    vh.vertices[points[i]].x, vh.vertices[points[i]].y, "magenta", LINE_SIZE));
+        }
+        current_moves -= 1;
+        yield "[CHAIN] Trying with point " + i;
+        while(upper.length > 1 && cross_product(vector(vh.vertices[upper[upper.length - 2]], vh.vertices[upper[upper.length - 1]]),
+                                                vector(vh.vertices[upper[upper.length - 1]], vh.vertices[points[i]])) > 0.0) {
+            vh.lines.delete(generate_unique_id(upper[upper.length - 2], upper[upper.length - 1]));
+            vh.lines.delete(generate_unique_id(upper[upper.length - 1], points[i]));
+            if(lower.indexOf(upper[upper.length - 1]) == -1)
+                vh.vertices[upper[upper.length - 1]].color = "black";
+            else
+                vh.vertices[upper[upper.length - 1]].color = "green";
+            upper.pop();
+            vh.lines.set(generate_unique_id(upper[upper.length - 1], points[i]),
+                         new Line2D(vh.context, vh.vertices[upper[upper.length - 1]].x, vh.vertices[upper[upper.length - 1]].y,
+                                    vh.vertices[points[i]].x, vh.vertices[points[i]].y, "magenta", LINE_SIZE));
+            yield "[CHAIN] Removing wrong turn";
+        }
+        upper.push(points[i]);
+    }
+    for(let id of upper) {
+        vh.vertices[id].color = "green";
+    }
+    for(let line of vh.lines.values()) {
+        line.color = "green";
+    }
+    yield "[CHAIN] Complete";
 }
 
 function vector(a, b) {
