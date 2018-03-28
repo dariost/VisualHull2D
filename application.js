@@ -470,7 +470,7 @@ function* smart_naive() {
                     rank[1]++;
                 }
                 yield "[SMARTNAIVE] Classified point " + k;
-                if(rank[0] > 0 && rank[1] > 1) {
+                if(rank[0] > 0 && rank[1] > 0) {
                     yield "[SMARTNAIVE] Early break";
                     break;
                 }
