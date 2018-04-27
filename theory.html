@@ -10,10 +10,78 @@
         <style>
         body {
             text-align: justify;
+            width: 80%;
         }
         </style>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.9.0/dist/katex.min.css" integrity="sha384-TEMocfGvRuD1rIAacqrknm5BQZ7W7uWitoih+jMNFXQIbNl16bO8OZmylH/Vi/Ei" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/katex@0.9.0/dist/katex.min.js" integrity="sha384-jmxIlussZWB7qCuB+PgKG1uLjjxbVVIayPJwi6cG6Zb4YKq0JIw+OMnkkEC7kYCq" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="pseudocode.min.css">
+        <script src="pseudocode.min.js"></script>
     </head>
     <body>
-        \( \int_{-\infty}^{+\infty} e^{-x^{2}} dx = \sqrt{\pi} \)
+        <h1>Definition</h1>
+        Let \( X \) be a set of points in \( \mathbb{R}^{k} \).
+        The convex hull of \( X \) is the smallest convex set that contains all points in \( X \).<br/>
+        If \( X \) is finite, then the convex hull of \( X \) is a \( k \)-polytope. <br/>
+        In the finite, \( \mathbb{R}^{2} \) case, the convex hull of \( X \) is a convex polygon.<br/>
+        In the finite case, the convex hull of \( X \) can be also defined as the set of all the convex combinations
+        of the points of \( X \):
+        \[ \mathrm{ConvexHull}(X) = \left\{\left.\sum_{i=1}^{|X|} \alpha_i x_i \right| (\forall i:\ \alpha_i \ge 0) \wedge \sum_{i=1}^{|X|} \alpha_i = 1 \right\} \]
+        <h1>Applications</h1>
+        Finding the convex hull of a set of points is useful in all kinds of fields, most notably:
+        <ul>
+            <li>Physics Engines</li>
+            <li>Image Processing</li>
+            <li>Competitive Programming</li>
+        </ul>
+        Given that the amount of points of which we want to find the convex hull can be very large,
+        it is important not only that we have correct ways of finding it, but also that they're fast.
+        <h1>Algorithms</h1>
+        Optimal algorithms for finding the convex hull exist for the \( \mathbb{R}^{2} \) and \( \mathbb{R}^{3} \) cases.
+        In this context "optimal" means an algorithm that takes \( O(kn\log{h}) \) steps, where \( n := |X| \) and \( h \) is
+        the number of vertices in the convex hull.<br/>
+        We will focus on the \( \mathbb{R}^{2} \) case, but some of the presented algorithms are trivally generalizable
+        to higher dimensions.
+        <h2>Naïve</h2>
+        Since \( X \) is finite, the convex set of \( X \) is a polygon. We want to find its edges; to do that, we
+        try all possible edges, and test whether all points lie exactly in one of the semi-planes defined by that
+        edge: if it's true, then that edge is part of the convex hull.
+        <pre id="naive-code" style="display: none;">
+            \begin{algorithmic}
+            \FUNCTION{Naïve}{$X$}
+            \STATE $n := |X|$
+            \STATE $S := \emptyset$
+            \FOR{$i := 1$ \TO $n$}
+                \FOR{$j := i + 1$ \TO $n$}
+                    \STATE $L := \emptyset$
+                    \STATE $U := \emptyset$
+                    \STATE $p(x) := \mathrm{semiplane\ defined\ by\ the\ line\ from}\ X[i]\ \mathrm{to}\ X[j]$
+                    \FORALL{$x \in X$}
+                        \IF{$p(x) \le 0$}
+                            \STATE $L \gets L \cup x$
+                        \ENDIF
+                        \IF{$p(x) \ge 0$}
+                            \STATE $U \gets U \cup x$
+                        \ENDIF
+                    \ENDFOR
+                    \IF{$|L| = n$ \OR $|U| = n$}
+                        \STATE $S \gets S \cup \langle X[i], X[j] \rangle$
+                    \ENDIF
+                \ENDFOR
+            \ENDFOR
+            \RETURN $S$
+            \ENDFUNCTION
+            \end{algorithmic}
+        </pre>
+        <div id="naive"><br/></div><br/>
+        This algorithm takes \( \Theta(n^{3}) \) steps in the \( \mathbb{R}^{2} \) case.<br/>
+        It can be easily generalized to the \( \mathbb{R}^{k} \) case, taking \( \Theta(kn^{k + 1}) \) steps.<br/>
+        A smarter version of this algorithm interrupts the innermost loop as soon as a negative and a positive \( p(x) \) are found.
+        <script>
+        pseudocode.render(document.getElementById("naive-code").textContent, document.getElementById("naive"), {});
+        </script>
+        <h2>Gift Wrapping</h2>
+        <h2>QuickHull</h2>
+        <h2>Monotone Chain</h2>
     </body>
 </html>
