@@ -58,14 +58,14 @@
                     \STATE $p(x) := \mathrm{semiplane\ defined\ by\ the\ line\ from}\ X[i]\ \mathrm{to}\ X[j]$
                     \FORALL{$x \in X$}
                         \IF{$p(x) \le 0$}
-                            \STATE $L \gets L \cup x$
+                            \STATE $L \gets L \cup \{ x \}$
                         \ENDIF
                         \IF{$p(x) \ge 0$}
-                            \STATE $U \gets U \cup x$
+                            \STATE $U \gets U \cup \{ x \}$
                         \ENDIF
                     \ENDFOR
                     \IF{$|L| = n$ \OR $|U| = n$}
-                        \STATE $S \gets S \cup \langle X[i], X[j] \rangle$
+                        \STATE $S \gets S \cup \{ \langle X[i], X[j] \rangle \}$
                     \ENDIF
                 \ENDFOR
             \ENDFOR
@@ -77,11 +77,133 @@
         This algorithm takes \( \Theta(n^{3}) \) steps in the \( \mathbb{R}^{2} \) case.<br/>
         It can be easily generalized to the \( \mathbb{R}^{k} \) case, taking \( \Theta(kn^{k + 1}) \) steps.<br/>
         A smarter version of this algorithm interrupts the innermost loop as soon as a negative and a positive \( p(x) \) are found.
-        <script>
-        pseudocode.render(document.getElementById("naive-code").textContent, document.getElementById("naive"), {});
-        </script>
+        <script>pseudocode.render(document.getElementById("naive-code").textContent, document.getElementById("naive"), {});</script>
         <h2>Gift Wrapping</h2>
+        This algorithm was independently created by <a href="https://dl.acm.org/citation.cfm?id=321564">Chand & Kapur (1970)</a> and by <a href="https://www.sciencedirect.com/science/article/pii/0020019073900203">R. A. Jarvis (1973)</a>.<br/>
+        The algorithm starts by picking a point known to be on the convex hull: it can be the lowest, the highest, the rightmost or the leftmost.
+        Then it selects the next point such that all other points lie in the right semiplane defined by the line passing through those two points.
+        It then repeats the process starting from the last point until it reaches the starting point.
+        <pre id="gift-code" style="display: none;">
+            \begin{algorithmic}
+            \FUNCTION{GiftWrapping}{$X$}
+            \STATE $i := 1$
+            \STATE $P[i] := $ leftmost point in $X$
+            \STATE $K := $ null
+            \WHILE{$K \ne P[0]$}
+                \STATE $K \gets $ any point in $X$ that is not $P[i]$
+                \FORALL{$x \in X \setminus \{ P[i] \}$}
+                    \STATE $p(x) := $ semiplane defined by the line from $P[i]$ to $K$
+                    \IF{$p(x) > 0$}
+                        \STATE $K \gets x$
+                    \ENDIF
+                \ENDFOR
+                \STATE $i \gets i + 1$
+                \STATE $P[i] := K$
+            \ENDWHILE
+            \RETURN $P$
+            \ENDFUNCTION
+            \end{algorithmic}
+        </pre>
+        <div id="gift"><br/></div><br/>
+        This algorithm takes \( \Theta(nh) \) steps in the \( \mathbb{R}^{2} \) case.
+        <script>pseudocode.render(document.getElementById("gift-code").textContent, document.getElementById("gift"), {});</script>
         <h2>QuickHull</h2>
+        This algorithm was independently created by <a href="https://dl.acm.org/citation.cfm?id=355766">W. Eddy (1977)</a> and by <a href="https://www.sciencedirect.com/science/article/pii/0020019078900212">A. Bykat (1978)</a>.<br/>
+        The algorithm works in two phases:
+        <ol>
+            <li>Splits the input in 2 sets separated by a line</li>
+            <li>Recursively excludes point from the convex hull</li>
+        </ol>
+        In the first phase the algorithm selects two points known to be in the convex hull (two of the lowest, the highest, the rightmost and the leftmost).
+        Then, it separates the points that lie on opposite sides of the line passing through the two previously selected points.
+        It then calls the second phase on those two sets.<br/>
+        In the second phase the algorithm takes a segment and some points all on one side of this line. It finds the furthest point
+        from the line, creates a triangle with that point and the given segment and categorize points: if a point is inside the triangle,
+        it gets discarded; the other points are grouped according to the side of the triangle they're on and the second phase it's
+        recursively called on those two groups of points.
+        If one side (excluding the given segment) has no points on it, it becomes part of the convex hull.
+        <pre id="quick-code" style="display: none;">
+            \begin{algorithmic}
+            \FUNCTION{QuickHull}{$X$}
+            \STATE $S := \emptyset$
+            \STATE $x_1 := $ leftmost point in $X$
+            \STATE $x_2 := $ rightmost point in $X$
+            \STATE $Q_1 := \emptyset$
+            \STATE $Q_2 := \emptyset$
+            \STATE $p(x) := $ semiplane defined by the line from $x_1$ to $x_2$
+            \FORALL{$x \in X \setminus \{ x_1, x_2 \}$}
+                \IF{$p(x) > 0$}
+                    \STATE $Q_1 \gets Q_1 \cup \{ x \}$
+                \ELSE
+                    \STATE $Q_2 \gets Q_2 \cup \{ x \}$
+                \ENDIF
+            \ENDFOR
+            \RETURN \CALL{FindHull}{$Q_1,\ x_1,\ x_2$} $\cup$ \CALL{FindHull}{$Q_2,\ x_1,\ x_2$}
+            \ENDFUNCTION
+            \FUNCTION{FindHull}{$Q,\ x_1,\ x_2$}
+            \IF{$|Q| = 0$}
+                \RETURN $\{ \langle x_1, x_2 \rangle \}$
+            \ENDIF
+            \STATE $D = $ some random point in $Q$
+            \FORALL{$x \in Q$}
+                \IF{dist($\overline{x_1 x_2}$, $x$) > dist($\overline{x_1 x_2}$, $D$)}
+                    \STATE $D \gets x$
+                \ENDIF
+            \ENDFOR
+            \STATE $Q_1 := \emptyset$
+            \STATE $Q_2 := \emptyset$
+            \FORALL{$x \in Q$}
+                \IF{$x$ is inside triangle($x_1,\ D,\ x_2$)}
+                    \STATE discard $x$
+                \ELSEIF{$x$ is outside the $\overline{x_1 D}$ edge}
+                    \STATE $Q_1 \gets Q_1 \cup \{ x \}$
+                \ELSEIF{$x$ is outside the $\overline{x_2 D}$ edge}
+                    \STATE $Q_2 \gets Q_2 \cup \{ x \}$
+                \ENDIF
+            \ENDFOR
+            \RETURN \CALL{FindHull}{$Q_1,\ x_1,\ D$} $\cup$ \CALL{FindHull}{$Q_2,\ x_2,\ D$}
+            \ENDFUNCTION
+            \end{algorithmic}
+        </pre>
+        <div id="quick"><br/></div><br/>
+        This algorithm takes \( O(n^{2}) \) steps in the \( \mathbb{R}^{2} \) case.<br/>
+        If we're lucky that the splits always divide the points in two almost equally sized sets, the algorithm takes \( \Omega(n \log{n}) \) steps.<br/>
+        It can be generalized for the \( \mathbb{R}^{k} \) case, taking \( O(k^{2} n^{2}) \) steps in the worst case and \( \Omega(k^{2} n \log{n}) \) steps if we're lucky.
+        <script>pseudocode.render(document.getElementById("quick-code").textContent, document.getElementById("quick"), {});</script>
         <h2>Monotone Chain</h2>
+        This algorithm was created by <a href="https://www.sciencedirect.com/science/article/pii/0020019079900723">A. M. Andrew (1979)</a>.<br/>
+        The algorithm first sorts the points in lexicographic ascending order. Then it builds the lower and upper convex hulls
+        in the following way: starting from the first point (the last for the upper side) it continues to add points in order until
+        there is a right turn. When a right turn it's detected it removes the last point that is part of the convex hull until there
+        are only left turns.
+        <pre id="mono-code" style="display: none;">
+            \begin{algorithmic}
+            \FUNCTION{MonotoneChain}{$X$}
+            \STATE $Q := $ sorted($X$)
+            \STATE $U := $ list()
+            \STATE $L := $ list()
+            \FOR{$i := 1$ \TO $|Q|$}
+                \WHILE{$|L| \ge 2$ \AND $L[-2] \to L[-1] \to Q[i]$ is a right turn}
+                    \STATE pop from $L$
+                \ENDWHILE
+                \STATE push $Q[i]$ into $L$
+            \ENDFOR
+            \FOR{$i := |Q|$ \TO $1$}
+                \WHILE{$|U| \ge 2$ \AND $U[-2] \to U[-1] \to Q[i]$ is a right turn}
+                    \STATE pop from $U$
+                \ENDWHILE
+                \STATE push $Q[i]$ into $U$
+            \ENDFOR
+            \STATE pop from $L$
+            \STATE pop from $U$
+            \RETURN concat($L$, $U$)
+            \ENDFUNCTION
+            \end{algorithmic}
+        </pre>
+        <div id="mono"><br/></div><br/>
+        This algorithm takes \( O(n \log{n}) \) steps in the \( \mathbb{R}^{2} \) case.<br/>
+        The number of steps is dominated by the sort operation, which takes \( O(n \log{n}) \) steps,
+        while the remaining part of the algorithm takes \( \Theta(n) \) steps.
+        <script>pseudocode.render(document.getElementById("mono-code").textContent, document.getElementById("mono"), {});</script>
     </body>
 </html>
