@@ -10,10 +10,46 @@
         <style>
         body {
             text-align: justify;
+            width: 80%;
         }
         </style>
     </head>
     <body>
-        \( e^{{\pi}i} = -1 \)
+        <h1>User Manual</h1>
+        The application has the following functionalities:
+        <ul>
+            <li>Generate: generates a new set of points; the valid number of points is in range [3; 256].</li>
+            <li>Speed: sets the speed fo the simulations.</li>
+            <li>Stop: stops the simulation.</li>
+            <li>Clear log: clears the simulation log.</li>
+            <li>Naïve: starts the naïve algorithm simulation, with the following color coding:</li>
+            <ul>
+                <li>Green: part of the convex hull</li>
+                <li>Magenta: edge being tested</li>
+                <li>Red: point on the right</li>
+                <li>Blue: point on the left</li>
+            </ul>
+            <li>Smart Naïve: starts the naïve algorithm simulation. The color coding is the same as Naïve.</li>
+            <li>Gift Wrapping: starts the gift wrapping algorithm simulation, with the following color coding:</li>
+            <ul>
+                <li>Green: part of the convex hull</li>
+                <li>Cyan: processed points</li>
+                <li>Yellow: leftmost turn</li>
+            </ul>
+            <li>QuickHull: starts the QuickHull algorithm simulation, with the following color coding:</li>
+            <ul>
+                <li>Green: part of the convex hull</li>
+                <li>Magenta: convex hull lower bound</li>
+                <li>Red: point on the right</li>
+                <li>Blue: point on the left</li>
+                <li>Cyan: processed points</li>
+                <li>Yellow: furthest point</li>
+            </ul>
+            <li>Monotone Chain: starts the monotone chain algorithm simulation, with the following color coding:</li>
+            <ul>
+                <li>Green: part of the convex hull</li>
+                <li>Magenta: current convex hull attempt</li>
+            </ul>
+        </ul>
     </body>
 </html>
