@@ -38,8 +38,9 @@
         it is important not only that we have correct ways of finding it, but also that they're fast.
         <h1>Algorithms</h1>
         Optimal algorithms for finding the convex hull exist for the \( \mathbb{R}^{2} \) and \( \mathbb{R}^{3} \) cases.
-        In this context "optimal" means an algorithm that takes \( O(kn\log{h}) \) steps, where \( n := |X| \) and \( h \) is
-        the number of vertices in the convex hull.<br/>
+        In this context "optimal" means an algorithm that takes \( O(kn\log{h}) \) steps, where \( n := |X| \), \( h \) is
+        the number of vertices in the convex hull and \( k \) is the number of dimensions.<br/>
+        Even if optimal algorithms exist, generally is enough to have an efficient algorithm, one that takes \( O(k^{d}n\log{n}) \) where \( d \) is some fixed number in \( \mathbb{R}_0^{+} \).<br/>
         We will focus on the \( \mathbb{R}^{2} \) case, but some of the presented algorithms are trivally generalizable
         to higher dimensions.
         <h2>Naïve</h2>
@@ -76,7 +77,7 @@
         <div id="naive"><br/></div><br/>
         This algorithm takes \( \Theta(n^{3}) \) steps in the \( \mathbb{R}^{2} \) case.<br/>
         It can be easily generalized to the \( \mathbb{R}^{k} \) case, taking \( \Theta(kn^{k + 1}) \) steps.<br/>
-        A smarter version of this algorithm interrupts the innermost loop as soon as a negative and a positive \( p(x) \) are found.
+        A smarter version of this algorithm breaks the innermost loop as soon as two points on opposing sides of the line are found.
         <script>pseudocode.render(document.getElementById("naive-code").textContent, document.getElementById("naive"), {});</script>
         <h2>Gift Wrapping</h2>
         This algorithm was independently created by <a href="https://dl.acm.org/citation.cfm?id=321564">Chand & Kapur (1970)</a> and by <a href="https://www.sciencedirect.com/science/article/pii/0020019073900203">R. A. Jarvis (1973)</a>.<br/>
