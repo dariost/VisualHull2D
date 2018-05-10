@@ -35,11 +35,13 @@
             <li>Competitive Programming</li>
         </ul>
         Given that the amount of points of which we want to find the convex hull can be very large,
-        it is important not only that we have correct ways of finding it, but also that they're fast.
+        it is important not only that we have correct ways of finding it, but also that they're fast.<br/>
+        In this document the <a href="https://en.wikipedia.org/wiki/Big_O_notation#Family_of_Bachmann%E2%80%93Landau_notations">Bachmann–Landau notation</a>
+        will be used to describe the computational complexity of the presented algorithms.
         <h1>Algorithms</h1>
         Optimal algorithms for finding the convex hull exist for the \( \mathbb{R}^{2} \) and \( \mathbb{R}^{3} \) cases.
         In this context "optimal" means an algorithm that takes \( O(kn\log{h}) \) steps, where \( n := |X| \), \( h \) is
-        the number of vertices in the convex hull and \( k \) is the number of dimensions.<br/>
+        the number of vertices in the convex hull (it is determined after the algorithm has found the convex hull) and \( k \) is the number of dimensions.<br/>
         Even if optimal algorithms exist, generally is enough to have an efficient algorithm, one that takes \( O(k^{d}n\log{n}) \) where \( d \) is some fixed number in \( \mathbb{R}_0^{+} \).<br/>
         We will focus on the \( \mathbb{R}^{2} \) case, but some of the presented algorithms are trivally generalizable
         to higher dimensions.
