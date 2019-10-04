@@ -177,7 +177,7 @@
         This algorithm was created by <a href="https://www.sciencedirect.com/science/article/pii/0020019079900723">A. M. Andrew (1979)</a>.<br/>
         The algorithm first sorts the points in lexicographic ascending order. Then it builds the lower and upper convex hulls
         in the following way: starting from the first point (the last for the upper side) it continues to add points in order until
-        there is a right turn. When a right turn it's detected it removes the last point that is part of the convex hull until there
+        there is a right turn. When a right turn is detected, it removes the last point that is part of the convex hull until there
         are only left turns.
         <pre id="mono-code" style="display: none;">
             \begin{algorithmic}
@@ -208,5 +208,34 @@
         The number of steps is dominated by the sort operation, which takes \( O(n \log{n}) \) steps,
         while the remaining part of the algorithm takes \( \Theta(n) \) steps.
         <script>pseudocode.render(document.getElementById("mono-code").textContent, document.getElementById("mono"), {});</script>
+    
+
+        <h2>Graham Scan</h2>
+        This algorithm was created by <a href="https://www.sciencedirect.com/science/article/pii/0020019072900452">Ronald Graham (1972)</a>.<br/>
+        The algorithm first chooses a point which is known to be part of the convex hull (eg. the leftmost point).
+        Then the points are sorted by angle with this point. It then builds the convex hull in the following way:
+        starting from the first point it continues to add points in order until there is a right turn.
+        When a right turn is detected, it removes the last point that is part of the convex hull until there are only left turns.
+        <pre id="graham-code" style="display: none;">
+            \begin{algorithmic}
+            \FUNCTION{GrahamScan}{$X$}
+            \STATE $x_1 := $ leftmost point in $X$
+            \STATE $Q := $ sorted($X\setminus \{ x_1 \}$)
+            \STATE $H := $ list($x_1$)
+            \FOR{$i := 1$ \TO $|Q|$}
+                \WHILE{$|H| \ge 2$ \AND $H[-2] \to H[-1] \to Q[i]$ is a right turn}
+                    \STATE pop from $H$
+                \ENDWHILE
+                \STATE push $Q[i]$ into $H$
+            \ENDFOR
+            \RETURN $H$
+            \ENDFUNCTION
+            \end{algorithmic}
+        </pre>
+        <div id="graham"><br/></div><br/>
+        This algorithm takes \( O(n \log{n}) \) steps in the \( \mathbb{R}^{2} \) case.<br/>
+        The number of steps is dominated by the sort operation, which takes \( O(n \log{n}) \) steps,
+        while the remaining part of the algorithm takes \( \Theta(n) \) steps.
+        <script>pseudocode.render(document.getElementById("graham-code").textContent, document.getElementById("graham"), {});</script>
     </body>
 </html>
