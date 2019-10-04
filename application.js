@@ -165,7 +165,8 @@ let controls = [
     document.getElementById("quickhull"),
     document.getElementById("smart_naive"),
     document.getElementById("gift"),
-    document.getElementById("chain")
+    document.getElementById("chain"),
+    document.getElementById("graham")
 ];
 
 function generate() {
@@ -636,6 +637,84 @@ function* chain() {
         line.color = "green";
     }
     yield "[CHAIN] Complete";
+}
+
+function* graham() {
+    let n = vh.vertices.length;
+    if(n < 3) {
+        return;
+    }
+    yield "[GRAHAM] Labeling points in order";
+    let points = new Array();
+    let smallest_point = 0;
+    for(let i = 0; i < n; i++) {
+        points.push(i);
+        if(vh.vertices[i].x<vh.vertices[smallest_point].x)smallest_point=i;
+    }
+    let tmp=vh.vertices[0];
+    vh.vertices[0]=vh.vertices[smallest_point];
+    vh.vertices[smallest_point]=tmp;
+    smallest_point=0;
+    points.sort(function(a, b) {
+        if(a==0)
+            return -1;
+        else if (b==0)
+            return 1;
+        else {
+            let cros = cross_product(vector(vh.vertices[0],vh.vertices[a]),vector(vh.vertices[0],vh.vertices[b]));
+            if (cros<0.0)
+                return -1;
+            else if (cros>0.0)
+                return 1;
+            else {
+                if(distance(vh.vertices[0],vh.vertices[a])<distance(vh.vertices[0],vh.vertices[b]))
+                    return -1;
+                else if(distance(vh.vertices[0],vh.vertices[a])>distance(vh.vertices[0],vh.vertices[b]))
+                    return 1;
+                else
+                    return 0;
+            }
+        }
+    });
+    for(let i = 0; i < n; i++) {
+        vh.vertices[points[i]].number = i;
+        current_moves -= 1;
+        yield "[GRAHAM] Labeled point " + i;
+    }
+    let hull = new Array();
+    for(let i = 0; i < n; i++) {
+        if(i>0)vh.vertices[points[i]].color = "magenta";
+        else vh.vertices[points[i]].color = "blue";
+        if(hull.length > 0) {
+            vh.lines.set(generate_unique_id(hull[hull.length - 1], points[i]),
+                         new Line2D(vh.context, vh.vertices[hull[hull.length - 1]].x, vh.vertices[hull[hull.length - 1]].y,
+                                    vh.vertices[points[i]].x, vh.vertices[points[i]].y, "magenta", LINE_SIZE));
+        }
+        current_moves -= 1;
+        yield "[GRAHAM] Trying with point " + i;
+        while(hull.length > 1 && cross_product(vector(vh.vertices[hull[hull.length - 2]], vh.vertices[hull[hull.length - 1]]),
+                                                vector(vh.vertices[hull[hull.length - 1]], vh.vertices[points[i]])) > 0.0) {
+            vh.lines.delete(generate_unique_id(hull[hull.length - 2], hull[hull.length - 1]));
+            vh.lines.delete(generate_unique_id(hull[hull.length - 1], points[i]));
+            vh.vertices[hull[hull.length - 1]].color = "black";
+            hull.pop();
+            vh.lines.set(generate_unique_id(hull[hull.length - 1], points[i]),
+                         new Line2D(vh.context, vh.vertices[hull[hull.length - 1]].x, vh.vertices[hull[hull.length - 1]].y,
+                                    vh.vertices[points[i]].x, vh.vertices[points[i]].y, "magenta", LINE_SIZE));
+            yield "[GRAHAM] Removing wrong turn";
+        }
+        hull.push(points[i]);
+    }
+    vh.lines.set(generate_unique_id(hull[hull.length - 1], hull[0]),
+        new Line2D(vh.context, vh.vertices[hull[hull.length - 1]].x, vh.vertices[hull[hull.length - 1]].y,
+        vh.vertices[0].x, vh.vertices[0].y, "magenta", LINE_SIZE));
+    for(let id of hull) {
+        vh.vertices[id].color = "green";
+    }
+    for(let line of vh.lines.values()) {
+        line.color = "green";
+    }
+    yield "[GRAHAM] Complete";
 }
 
 function vector(a, b) {
