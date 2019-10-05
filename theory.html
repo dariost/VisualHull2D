@@ -210,6 +210,112 @@
         <script>pseudocode.render(document.getElementById("mono-code").textContent, document.getElementById("mono"), {});</script>
     
 
+        <h2>Kirkpatrick-Seidel</h2>
+        This algorithm was created by <a href="https://hdl.handle.net/1813/6417">David G. Kirkpatrick and Raimund Seidel (1983)</a>.<br/>
+        The algorithm should do something like the following:
+        First find a vertical line that divides the given
+        point set in two approximately equal sized parts. Next determine the "bridge" crossing
+        this line, i.e. the edge of the upper hull that intersects this line. Eliminate the points
+        that lie underneath the bridge, and finally apply the algorithm recursively to the two
+        sets of the remaining points on the left and right side of the vertical line.
+        The only difficult part in such an algorithm appears to be the construction of the
+        bridge. 
+        Finding the bridge in linear time: We are given a set S of n points in the plane and a vertical
+        line L which has points of S to its left and right. We are to find the edge of the upper
+        hull of S that intersects L. If two edges intersect L, i.e. L contains a vertex v of the
+        upper hull, we want to identify the edge for which v is the left endpoint. Call this
+        edge the bridge and its endpoints bridge points. Let us define a supporting
+        line of S to be a nonvertical straight line which contains at least one point of S but
+        has no points of S above it. Obviously the bridge must be contained in some supporting
+        line. Call this line b and let Sb be the slope of b.
+        For our purposes, finding the bridge means identifying the two bridge points. One
+        possible way of achieving this is to successively eliminate points from S as candidates
+        for bridge points. For this purpose we pair up the points of S into In |S|/2 couples.
+        The  following two lemmas show how forming pairs of points facilitates the elimination of
+        candidates for bridge points.
+        LEMMA 3.1. Let p, q be a pair ofpoints of S. If x(p)=x(q) and y(p) &gt; y(q) then q cannot be a bridge point.
+        Proof. Trivial.
+        LEMMA 3.2. Let p, q be a pair of points of S with x(p) &lt; x(q), and let Spq be the
+        slope of the straight line h through p and q.
+        (1) If Spq &gt; Sb then p cannot be a bridge point.
+        (2) If Spq &lt; Sb then q cannot be a bridge point.
+        Proof (for case (1); the proof for case (2) is symmetrical). Assume p was a bridge
+        point. By virtue of Spq &gt; Sb and x(p) &lt; x(q), q would lie above the bridge line b which
+        would contradict the fact that b is a supporting line of S.
+        Q.E.D.
+        Proof. Trivial.
+        To test whether Spq &gt; Sb it suffices to find the supporting line h of S with
+        slope Spq and to determine whether h contains points of S to the right or to the left
+        of L. Of course, finding this supporting line h requires linear time which is clearly too
+        expensive to be done for every one of the n/2 pairs individually. However, this
+        problem can be overcome by judiciously choosing a slope Sh with the property that if
+        Sh &gt; Sb then Spq &gt; Sh (and hence Spq &gt; Sb) for a large number of pairs p, q and, if Sh &lt; Sb
+        then Spq &lt; Sh (and hence Spq &lt; Sb) for a large number of pairs p, q. A natural choice for
+        an Sh with this property is the median of the slopes of the lines defined by the n/2
+        pairs of points.
+        <pre id="kirk-seidel-code" style="display: none;">
+            \begin{algorithmic}
+            \FUNCTION{UpperHull}{$X$}
+            \STATE $x_1 := $ leftmost point in $X$
+            \STATE $x_2 := $ rightmost point in $X$
+            \IF{ $x_1 = x_2$ }
+                \STATE print $x_1$ and stop
+            \ENDIF
+            \STATE remove the points that have the same x as $x_1$ and $x_2$ except these 2
+            \RETURN \CALL{Connect}{$x_1,\ x_2,\ X$}
+            \ENDFUNCTION
+
+            \FUNCTION{Connect}{$x_1,\ x_2,\ X$}
+            \STATE $a :=$ median of x-es in $X$
+            \STATE $(i,j) :=$ \CALL{Bridge}{$X,\ a$}
+            \STATE $X_l :=$ points to the left of bridge
+            \STATE $X_r :=$ points to the right of bridge
+            \IF{ $i = x_1$ }
+                \STATE print $x_1$
+            \ELSE
+                \STATE\CALL{Connect}{$x_1,\ i,\ X_l$}
+            \ENDIF
+            \IF{ $j = x_2$ }
+                \STATE print $x_2$
+            \ELSE
+                \STATE\CALL{Connect}{$j,\ x_2,\ X_r$}
+            \ENDIF
+            \ENDFUNCTION
+
+            \FUNCTION{Bridge}{$X,\ a$}
+            \STATE $CANDIDATES := \emptyset$
+            \IF{ $|X| = 2$ }
+                \STATE\RETURN $(i,j)$
+            \ENDIF
+            \STATE Make $N/2$ ordered pairs of points, if you can't pair a point put it into $CANDIDATES$, call these $PAIRS$
+            \STATE If some pair in $PAIRS$ has the same x, put the upper one in $CANDIDATES$ and throw away the pair
+            \STATE let $k(p_i,p_j)$ be the slope from point $p_i$ to $p_j$
+            \STATE call $K$ the median of $k$ for points in $PAIRS$
+            \STATE Let MAX be the set of points in $X$, st y(p)-K*x(p) is maximum.
+            \STATE Let $p_k$ be the point in $MAX$ with minimum x-coordinate.
+            \STATE Let $p_m$ be the point in $MAX$ with maximum x-coordinate.
+
+            Let p,, be the point in MAX with maximum x-coordinate.
+            \IF{ x($p_k$) &le; a \AND x($p_m$) &gt; a }
+            \STATE return((k, m)).
+            \ELSEIF{x($p_m$) &lt; a}
+            \STATE for all $PAIRS$ insert $p_j$ in $CANDIDATES$
+            \STATE for all $PAIRS$ with slope less than $K$, insert $p_i$ in $CANDIDATES$
+            \ELSEIF{X(pk) > a }
+            \STATE for all $PAIRS$ insert $p_i$ in $CANDIDATES$
+            \STATE for all $PAIRS$ with slope greater than $K$, insert $p_i$ in $CANDIDATES$
+            \ENDIF
+            \RETURN \CALL{Bridge}{$CANDIDATES,\ A$}
+            \ENDFUNCTION
+
+            \end{algorithmic}
+        </pre>
+        <div id="kirk-seidel"><br/></div><br/>
+        This algorithm takes \( O(n \log{h}) \) steps in the \( \mathbb{R}^{2} \) case.<br/>
+        The algorithm needs a linear time median algorithm in two places,
+        however you can take an element at random instead of the median and it becomes a randomized algorithm with the same expected complexity.
+        <script>pseudocode.render(document.getElementById("kirk-seidel-code").textContent, document.getElementById("kirk-seidel"), {});</script>
+    
         <h2>Graham Scan</h2>
         This algorithm was created by <a href="https://www.sciencedirect.com/science/article/pii/0020019072900452">Ronald Graham (1972)</a>.<br/>
         The algorithm first chooses a point which is known to be part of the convex hull (eg. the leftmost point).
@@ -237,5 +343,7 @@
         The number of steps is dominated by the sort operation, which takes \( O(n \log{n}) \) steps,
         while the remaining part of the algorithm takes \( \Theta(n) \) steps.
         <script>pseudocode.render(document.getElementById("graham-code").textContent, document.getElementById("graham"), {});</script>
+    
+    
     </body>
 </html>

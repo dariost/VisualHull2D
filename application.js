@@ -166,7 +166,8 @@ let controls = [
     document.getElementById("smart_naive"),
     document.getElementById("gift"),
     document.getElementById("chain"),
-    document.getElementById("graham")
+    document.getElementById("graham"),
+    document.getElementById("kirk_seidel")
 ];
 
 function generate() {
@@ -716,6 +717,181 @@ function* graham() {
     }
     yield "[GRAHAM] Complete";
 }
+
+class MyPoint {
+    constructor(x,y,label){
+        this.x=x;
+        this.y=y;
+        this.label=label;
+    }
+};
+
+function* kirk_seidel_bridge(S, a){
+    for(let i=0; i<S.length; i++){
+        vh.vertices[S[i].label].color="magenta";
+    }
+    yield "[KIRKPATRIK] pairing points to find the bridge";
+    if(S.length==2){
+        if(S[0].x<S[1].x)return [S[0],S[1]];
+        else return [S[1],S[0]];
+    }
+    let P = new Array(); //pairs
+    let C = new Array(); //candidates
+    for(let i=0; i<S.length-1; i+=2){
+        if(S[i].x<S[i+1].x)P.push([i,i+1]);
+        else if(S[i].x>S[i+1].x)P.push([i+1,i]);
+        else if(S[i].y>S[i+1].y)C.push(S[i]);
+        else C.push(S[i+1]);
+    }
+    if(S.length%2!=0){
+        C.push(S[S.length-1]);
+    }
+    let rp = Math.floor(Math.random()*P.length);
+    let K = (S[P[rp][0]].y-S[P[rp][1]].y)/(S[P[rp][0]].x-S[P[rp][1]].x);
+    let k=-1;//point in h with minimum x
+    let m=-1;//point in h with maximum x
+    let ma = S[0].y-K*S[0].x;
+    for(let i=1; i<S.length; i++){
+        if(S[i].y-K*S[i].x>ma)ma=S[i].y-K*S[i].x;
+    }
+    for(let i=0; i<S.length; i++){
+        if(Math.abs(S[i].y-K*S[i].x-ma)<0.00001){
+            if(k==-1||S[k].x>S[i].x)k=i;
+            if(m==-1||S[m].x<S[i].x)m=i;
+        }
+    }
+
+    for(let i=0; i<S.length; i++){
+        vh.vertices[S[i].label].color="black";
+    }
+
+    if(S[m].x<=a){
+        for(let i=0; i<P.length; i++){
+            let kappa = (S[P[i][0]].y-S[P[i][1]].y)/(S[P[i][0]].x-S[P[i][1]].x);
+            C.push(S[P[i][1]]);
+            if(kappa<K)C.push(S[P[i][0]]);
+        }
+    } else if(S[k].x>a){
+        for(let i=0; i<P.length; i++){
+            let kappa = (S[P[i][0]].y-S[P[i][1]].y)/(S[P[i][0]].x-S[P[i][1]].x);
+            C.push(S[P[i][0]]);
+            if(kappa>K)C.push(S[P[i][1]]);
+        }
+    } else {
+        return [S[k],S[m]];
+    }
+    let gen = kirk_seidel_bridge(C,a);
+    let result = gen.next();
+    while(!result.done){
+        yield result.value;
+        result = gen.next();
+    }
+    return result.value;
+}
+
+function* kirk_seidel_connect(T){
+    let min=0;
+    let max=0;
+    for(let i=0; i<T.length; i++){
+        if(T[min].x>T[i].x || (T[min].x==T[i].x && T[min].y<T[i].y))min=i;
+        if(T[max].x<T[i].x || (T[max].x==T[i].x && T[max].y<T[i].y))max=i;
+    }
+    let a = T[Math.floor(Math.random()*T.length)].x;
+
+    if (a==T[max].x)a=a-1; // DIRTY
+    if (a==T[min].x)a=a+1; //  FIX
+
+    vh.lines.set(generate_unique_id(MAX_POINTS,MAX_POINTS),
+                         new Line2D(vh.context, a, 0,
+                                    a, vh.height, "black", LINE_SIZE));
+    yield "[KIRKSEIDEL] find bridge for this line"
+    let gen = kirk_seidel_bridge(T,a);
+    let result = gen.next();
+    while(!result.done){
+        yield result.value;
+        result = gen.next();
+    }
+    let bridge = result.value;
+
+    yield "[KIRKSEIDEL] got the bridge: "+bridge[0].label+" "+bridge[1].label;
+    vh.lines.set(generate_unique_id(bridge[0].label, bridge[1].label),
+                         new Line2D(vh.context, vh.vertices[bridge[0].label].x, vh.vertices[bridge[0].label].y,
+                            vh.vertices[bridge[1].label].x, vh.vertices[bridge[1].label].y, "green", LINE_SIZE));
+    let Tl = new Array();
+    let Tr = new Array();
+    for(let i=0; i<T.length; i++){
+        if(T[i].x<=bridge[0].x){
+            vh.vertices[T[i].label].color="blue";
+            Tl.push(T[i]);
+        }
+        else if(T[i].x>=bridge[1].x){
+            vh.vertices[T[i].label].color="red";
+            Tr.push(T[i]);
+        }
+        else {
+            vh.vertices[T[i].label].color="yellow";
+        }
+    }
+    if(bridge[0].label!=T[min].label){
+        let gen = kirk_seidel_connect(Tl);
+        let result = gen.next();
+        while(!result.done){
+            yield result.value;
+            result = gen.next();
+        }
+    }
+    if(bridge[1].label!=T[max].label){
+        let gen = kirk_seidel_connect(Tr);
+        let result = gen.next();
+        while(!result.done){
+            yield result.value;
+            result = gen.next();
+        }
+    }
+}
+
+function* kirk_seidel() {
+    let n = vh.vertices.length;
+    let S = new Array();
+    if(n < 3) {
+        return;
+    }
+    for(let i = 0; i < n; i++) {
+        vh.vertices[i].number = i;
+        S.push(new MyPoint(vh.vertices[i].x,vh.vertices[i].y,i));
+    }
+    yield "[KIRKSEIDEL] Labeled points randomly";
+
+    yield "[KIRKSEIDEL] Building lower hull";
+    {
+        let gen = kirk_seidel_connect(S);
+        let result = gen.next();
+        while(!result.done){
+            yield result.value;
+            result = gen.next();
+        }
+    }
+
+    for(let i=0; i<n; i++){
+        vh.vertices[i].color="black";
+    }
+
+    yield "[KIRKSEIDEL] Building upper hull";
+    {
+        for(let i=0; i<S.length; i++){
+            S[i].y=-S[i].y;
+        }
+        let gen = kirk_seidel_connect(S);
+        let result = gen.next();
+        while(!result.done){
+            yield result.value;
+            result = gen.next();
+        }
+    }
+    
+    yield "[KIRKSEIDEL] Complete";
+}
+
 
 function vector(a, b) {
     return {
